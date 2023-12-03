@@ -1,8 +1,6 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <ArduinoWebsockets.h>
-#include "camera_pins.h"
-#include "config.h"
 
 #define CAMERA_MODEL_AI_THINKER
 
@@ -15,6 +13,9 @@ const char* password = "";
 const char* websocket_server_host = "";
 const uint16_t websocket_server_port = 0000;
 ************************************************************/
+
+#include "camera_pins.h"
+#include "config.h"
 
 using namespace websockets;
 WebsocketsClient client;
