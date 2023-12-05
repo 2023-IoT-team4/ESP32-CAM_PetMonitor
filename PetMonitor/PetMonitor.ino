@@ -15,11 +15,13 @@ const uint16_t websocket_server_port = 0000;
 ************************************************************/
 
 #include "camera_pins.h"
+#include "config.h"
 
 using namespace websockets;
 WebsocketsClient client;
 
 // 10초마다 Websocket 서버와 연결이 되었는지 확인한다.
+unsigned long currentTime;
 unsigned long lastAvailableChecked = 0;
 const unsigned long clickTimeout = 10 * 1000;
 
@@ -55,7 +57,7 @@ void setup() {
   config.pixel_format = PIXFORMAT_JPEG;
 
   //init with high specs to pre-allocate larger buffers
-  if(psramFound()){
+  if (psramFound()) {
     Serial.println("hello");
     config.frame_size = FRAMESIZE_VGA;
     config.jpeg_quality = 12;
@@ -87,37 +89,43 @@ void setup() {
   Serial.println("' to connect");
 
   // Websocket connection
-  while(!connectToServer()){
+  while (!connectToServer()) {
     delay(500);
     Serial.print(".");
   }
   Serial.println("Websocket Connected!");
+  lastAvailableChecked = millis();
 }
 
 void loop() {
-  if((millis() - lastAvailableChecked) > clickTimeout && !client.available()){
-    // 서버와 연결이 끊어졌을 때, 다시 시도
-    while (!connectToServer()) {
-      Serial.print(".");
-      delay(500);
+  if ((millis() - lastAvailableChecked) > clickTimeout) {
+    Serial.println("연결 확인..");
+    if (client.available()) {
+      lastAvailableChecked = millis();
+    } else {
+      // 서버와 연결이 끊어졌을 시, 다시 연결 시도
+      while (!connectToServer()) {
+        Serial.print(".");
+        delay(500);
+      }
+      Serial.println("\nWebsocket Reconnected!");
     }
-    Serial.println("\nWebsocket Reconnected!");
   }
 
   camera_fb_t *fb = esp_camera_fb_get();
 
-  if(!fb){
+  if (!fb) {
     Serial.println("Camera capture failed");
     esp_camera_fb_return(fb);
     return;
   }
 
-  if(fb->format != PIXFORMAT_JPEG){
+  if (fb->format != PIXFORMAT_JPEG) {
     Serial.println("Non-JPEG data not implemented");
     return;
   }
 
-  client.sendBinary((const char*) fb->buf, fb->len);
+  client.sendBinary((const char *)fb->buf, fb->len);
 
   esp_camera_fb_return(fb);
 }
