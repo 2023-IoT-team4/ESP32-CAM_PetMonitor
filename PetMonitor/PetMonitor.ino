@@ -15,10 +15,13 @@ const uint16_t websocket_server_port = 0000;
 ************************************************************/
 
 #include "camera_pins.h"
-#include "config.h"
 
 using namespace websockets;
 WebsocketsClient client;
+
+// 10초마다 Websocket 서버와 연결이 되었는지 확인한다.
+unsigned long lastAvailableChecked = 0;
+const unsigned long clickTimeout = 10 * 1000;
 
 bool connectToServer() {
   return client.connect(websocket_server_host, websocket_server_port, "/");
@@ -48,16 +51,19 @@ void setup() {
   config.pin_sscb_scl = SIOC_GPIO_NUM;
   config.pin_pwdn = PWDN_GPIO_NUM;
   config.pin_reset = RESET_GPIO_NUM;
-  config.xclk_freq_hz = 10000000;
+  config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
+
   //init with high specs to pre-allocate larger buffers
   if(psramFound()){
+    Serial.println("hello");
     config.frame_size = FRAMESIZE_VGA;
-    config.jpeg_quality = 16;
+    config.jpeg_quality = 12;
     config.fb_count = 1;
+    config.grab_mode = CAMERA_GRAB_LATEST;
   } else {
     config.frame_size = FRAMESIZE_SVGA;
-    config.jpeg_quality = 12;
+    config.jpeg_quality = 20;
     config.fb_count = 1;
   }
 
@@ -89,7 +95,7 @@ void setup() {
 }
 
 void loop() {
-  if (!client.available()) {
+  if((millis() - lastAvailableChecked) > clickTimeout && !client.available()){
     // 서버와 연결이 끊어졌을 때, 다시 시도
     while (!connectToServer()) {
       Serial.print(".");
@@ -99,6 +105,7 @@ void loop() {
   }
 
   camera_fb_t *fb = esp_camera_fb_get();
+
   if(!fb){
     Serial.println("Camera capture failed");
     esp_camera_fb_return(fb);
