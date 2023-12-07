@@ -15,7 +15,6 @@ const uint16_t websocket_server_port = 0000;
 ************************************************************/
 
 #include "camera_pins.h"
-#include "config.h"
 
 using namespace websockets;
 WebsocketsClient client;
@@ -60,7 +59,7 @@ void setup() {
   if (psramFound()) {
     Serial.println("hello");
     config.frame_size = FRAMESIZE_VGA;
-    config.jpeg_quality = 12;
+    config.jpeg_quality = 18;
     config.fb_count = 1;
     config.grab_mode = CAMERA_GRAB_LATEST;
   } else {
